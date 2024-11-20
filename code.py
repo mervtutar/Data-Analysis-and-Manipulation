@@ -32,12 +32,12 @@ check_df(satis_df)
 print("müşteri verisi bilgileri/n")
 check_df(musteri_df)
 
-##################################################################
+####################################################################################
 # Görev 1: Veri Temizleme ve Manipülasyonu (%25)
 # 1.	Eksik verileri ve aykırı (outlier) verileri analiz edip temizleyin. Eksik verileri tamamlamak için çeşitli yöntemleri (ortalama, medyan gibi) kullanarak eksiklikleri doldurun.
 # 2.	Fiyat ve harcama gibi değişkenler için aykırı değerleri tespit edip verisetinden çıkarın veya aykırı değerleri belirli bir aralık içine çekin.
 # 3.	Müşteri verisi ile satış verisini musteri_id üzerinden birleştirerek geniş bir veri seti oluşturun.
-##################################################################
+####################################################################################
 
 # eksik değerlere bakalım
 satis_df.info() # veride eksik değer bulunmadı
@@ -107,6 +107,28 @@ sns.boxplot(data=satis_df, y='toplam_satis', color='lightgreen')
 plt.title('Satış Verisi - Toplam Satış')
 plt.ylabel('Toplam Satış')
 plt.show()
+# hem check_outliers fonksiyonu hem boxplot ile kontrol edildiğinde aykırı değer tespit edilmedi
 
+
+# Müşteri ve Satış Verilerini Birleştirme
+data_df = pd.merge(musteri_df, satis_df, on='musteri_id', how='inner')
+data_df.head()
+
+# Birleştirilmiş veri setinin genel bilgilerini kontrol edelim
+check_df(data_df)
+
+# Birleştirilmiş veri setini yeni bir CSV dosyasına kaydedelim
+data_df.to_csv('merged_data.csv', index=False)
+
+####################################################################################
+# Görev 2: Zaman Serisi Analizi (%25)
+# 1.	Satış verisi üzerinde haftalık ve aylık bazda toplam satış ve ürün satış trendlerini analiz edin.
+# 2.	tarih sütununu kullanarak, her ayın ilk ve son satış günlerini bulun. Ayrıca, her hafta kaç ürün satıldığını hesaplayın.
+# 3.	Zaman serisindeki trendleri tespit etmek için grafikler çizdirin (örneğin: aylık satış artışı veya düşüşü).
+####################################################################################
+
+df = pd.read_csv("merged_data.csv")
+df.head()
+df.tail()
 
 
