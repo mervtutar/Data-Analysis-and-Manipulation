@@ -122,13 +122,82 @@ data_df.to_csv('merged_data.csv', index=False)
 
 ####################################################################################
 # Görev 2: Zaman Serisi Analizi (%25)
-# 1.	Satış verisi üzerinde haftalık ve aylık bazda toplam satış ve ürün satış trendlerini analiz edin.
-# 2.	tarih sütununu kullanarak, her ayın ilk ve son satış günlerini bulun. Ayrıca, her hafta kaç ürün satıldığını hesaplayın.
-# 3.	Zaman serisindeki trendleri tespit etmek için grafikler çizdirin (örneğin: aylık satış artışı veya düşüşü).
+# 1. Satış verisi üzerinde haftalık ve aylık bazda toplam satış ve ürün satış trendlerini analiz edin.
+# 2. tarih sütununu kullanarak, her ayın ilk ve son satış günlerini bulun. Ayrıca, her hafta kaç ürün satıldığını hesaplayın.
+# 3. Zaman serisindeki trendleri tespit etmek için grafikler çizdirin (örneğin: aylık satış artışı veya düşüşü).
 ####################################################################################
 
-df = pd.read_csv("merged_data.csv")
-df.head()
-df.tail()
+satis_df.head()
+
+# Tarih sütununu datetime formatına çevirme
+satis_df['tarih'] = pd.to_datetime(satis_df['tarih'])
+
+# Veriyi tarih sırasına göre sıralayalım
+satis_df = satis_df.sort_values(by='tarih')
 
 
+# Haftalık bazda toplam satış ve adet analizi (Kategori bazında)
+haftalik_kategori_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='W'), 'kategori']).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
+print(haftalik_kategori_trend.head(10))
+
+
+# Haftalık bazda toplam satış ve adet analizi (Ürün bazında)
+haftalik_urun_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='W'), 'ürün_adi']).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
+print(haftalik_urun_trend.head(15))
+
+
+# Aylık bazda toplam satış ve adet analizi (Kategori bazında)
+aylik_kategori_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='M'), 'kategori']).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
+print(aylik_kategori_trend.head(10))
+
+
+# Aylık bazda toplam satış ve adet analizi (Ürün bazında)
+aylik_urun_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='M'), 'ürün_adi']).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
+print(aylik_urun_trend.head(15))
+
+
+# Tarih sütunundan ay bazında gruplama
+ilk_satis_gunleri = satis_df.groupby(satis_df['tarih'].dt.to_period('M')).first().reset_index(drop=True)
+son_satis_gunleri = satis_df.groupby(satis_df['tarih'].dt.to_period('M')).last().reset_index(drop=True)
+
+print("Her ayın ilk satış günleri:")
+print(ilk_satis_gunleri[['tarih', 'kategori', 'ürün_adi', 'toplam_satis']].head())
+
+print("\nHer ayın son satış günleri:")
+print(son_satis_gunleri[['tarih', 'kategori', 'ürün_adi', 'toplam_satis']].head())
+
+# her hafta kaç ürün satıldığına bakalım
+haftalik_urun_satis = satis_df.groupby([pd.Grouper(key='tarih', freq='W')]).agg({'adet': 'sum'}).reset_index()
+print("\nHaftalık Ürün Satışları:\n", haftalik_urun_satis.head())
+
+
+
+# Zaman serisindeki trendleri tespit etmek için grafikler çizdirelim
+# Haftalık ve aylık bazda toplam satışları hesaplayalım
+# Haftalık toplam satışlar
+haftalik_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='W')]).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
+
+# Aylık toplam satışlar
+aylik_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='M')]).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
+
+# haftalık trendin grafiğini çizelim
+plt.figure(figsize=(10, 6))
+sns.lineplot(data=haftalik_trend, x='tarih', y='toplam_satis', marker='o', label='Haftalık Toplam Satış')
+plt.title('Haftalık Toplam Satış Trendleri')
+plt.xlabel('Tarih')
+plt.ylabel('Değer')
+plt.legend()
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# aylık trendin grafiğini çizelim
+plt.figure(figsize=(10, 6))
+sns.lineplot(data=aylik_trend, x='tarih', y='toplam_satis', marker='o', label='Aylık Toplam Satış')
+plt.title('Aylık Toplam Satış ve Ürün Satış Trendleri')
+plt.xlabel('Tarih')
+plt.ylabel('Değer')
+plt.legend()
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
