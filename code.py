@@ -351,8 +351,166 @@ print("Kategori Bazında Aylık Satışlar ve Değişim Oranları:\n", kategori_
 
 
 ####################################################################################
-# Görev 3: İleri Düzey Veri Manipülasyonu (%25)
-# 1.	Müşterilerin şehir bazında toplam harcama miktarını bulun ve şehirleri en çok harcama yapan müşterilere göre sıralayın.
-# 2.	Satış verisinde her bir ürün için ortalama satış artışı oranı hesaplayın. Bu oranı hesaplamak için her bir üründe önceki aya göre satış değişim yüzdesini kullanın.
-# 3.	Pandas groupby ile her bir kategorinin aylık toplam satışlarını hesaplayın ve değişim oranlarını grafikle gösterin.
+# Görev 5: Ekstra (BONUS)
+# 1.	Pareto Analizi: Satışların %80’ini oluşturan ürünleri belirleyin (80/20 kuralını uygulayın). Bu ürünleri grafikte gösterin.
+# 2.	Cohort Analizi: Müşterilerin satın alım alışkanlıklarını analiz etmek için Pandas ile cohort analizi yapın. Örneğin, ilk kez satın alan müşterilerin tekrar alım oranlarını inceleyin.
+# 3.	Tahmin Modeli: Aylık veya haftalık satış miktarlarını tahmin etmek için basit bir regresyon modeli (örneğin Linear Regression) uygulayın. sklearn kullanarak train/test split işlemi ile modeli eğitin ve modelin doğruluğunu ölçün.
 ####################################################################################
+
+# ürün bazında satışları büyükten küçüğe sıralayalım
+urun_satislari = data_df.groupby('ürün_adi')['toplam_satis'].sum().sort_values(ascending=False).reset_index()
+toplam_satis = urun_satislari['toplam_satis'].sum()
+
+# Satışların %80’ini oluşturan ürünleri belirlemek için kümülatif yüzde kullanalım
+urun_satislari['kümülatif_satis'] = urun_satislari['toplam_satis'].cumsum()
+urun_satislari['kümülatif_yuzde'] = (urun_satislari['kümülatif_satis'] / toplam_satis) * 100
+pareto_urunler = urun_satislari[urun_satislari['kümülatif_yuzde'] <= 80]
+print("satışların %80’ini oluşturan ürünler:\n", pareto_urunler)
+
+# görselleştirelim
+plt.figure(figsize=(12, 8))
+sns.barplot(x='ürün_adi', y='toplam_satis', data=pareto_urunler, palette='coolwarm')
+plt.xticks(rotation=45, ha='right')
+plt.title('Pareto Analizi: Satışların %80\'ini Oluşturan Ürünler')
+plt.xlabel('Ürün Adı')
+plt.ylabel('Toplam Satış')
+plt.tight_layout()
+plt.show()
+
+
+#Cohort analizi
+# İlk satın alma tarihini hesaplama
+ilk_satin_alma = data_df.groupby('musteri_id')['tarih'].min().reset_index()
+ilk_satin_alma.rename(columns={'tarih': 'ilk_satin_alma_tarihi'}, inplace=True)
+
+# Cohort başlangıç ayı
+ilk_satin_alma['ilk_ay'] = ilk_satin_alma['ilk_satin_alma_tarihi'].dt.to_period('M')
+
+# Veri setine ekleme
+data_df = data_df.merge(ilk_satin_alma, on='musteri_id')
+
+# Cohort ve satış ayı
+data_df['satis_ayi'] = data_df['tarih'].dt.to_period('M')
+data_df['cohort_ay'] = (data_df['satis_ayi'] - data_df['ilk_ay']).apply(lambda x: x.n)
+
+# Cohort analizi pivot table
+cohort_data = data_df.pivot_table(
+    index='ilk_ay',
+    columns='cohort_ay',
+    values='musteri_id',
+    aggfunc='nunique'
+)
+
+# Cohort yüzdeleri
+cohort_percentage = cohort_data.divide(cohort_data.iloc[:, 0], axis=0) * 100
+
+# Görselleştirme
+plt.figure(figsize=(12, 8))
+sns.heatmap(cohort_percentage, annot=True, fmt=".1f", cmap="YlGnBu")
+plt.title('Cohort Analizi: Müşteri Tekrar Alım Oranları')
+plt.xlabel('Cohort Ayı')
+plt.ylabel('İlk Alım Ayı')
+plt.show()
+
+# Sonuç
+print("Cohort Analizi Tablosu:\n", cohort_percentage)
+
+
+# Tahmin Modeli - aylık toplam satışı tahmin edelim
+data_df = pd.read_csv("merged_data.csv")
+data_df.head()
+data_df['tarih'] = pd.to_datetime(data_df['tarih'])
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+# Aylık toplam satış
+aylik_satis = data_df.groupby(data_df['tarih'].dt.to_period('M')).agg({'toplam_satis': 'sum'}).reset_index()
+aylik_satis['tarih'] = aylik_satis['tarih'].astype(str)
+
+# Tarihi sayısal değere dönüştürme
+aylik_satis['tarih_num'] = range(1, len(aylik_satis) + 1)
+
+# Model için özellikler ve hedef
+X = aylik_satis[['tarih_num']]
+y = aylik_satis['toplam_satis']
+
+# Veriyi train/test olarak bölme
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Modeli oluşturma ve eğitme
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Tahminler
+y_pred = model.predict(X_test)
+
+# Model başarımı
+mae = mean_absolute_error(y_test, y_pred)
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+# Sonuç
+print(f"Mean Absolute Error: {mae:.2f}")
+print(f"Mean Squared Error: {mse:.2f}")
+print(f"R^2 Score: {r2:.2f}")
+
+# Gelecek aylar için tahmin
+future = pd.DataFrame({'tarih_num': range(len(aylik_satis) + 1, len(aylik_satis) + 13)})
+future['tahmin_satis'] = model.predict(future)
+
+# Görselleştirme
+plt.figure(figsize=(10, 6))
+plt.plot(aylik_satis['tarih_num'], aylik_satis['toplam_satis'], label='Gerçek Veriler', marker='o')
+plt.plot(future['tarih_num'], future['tahmin_satis'], label='Tahmin', linestyle='--', color='red')
+plt.title('Aylık Satış Tahmini (Linear Regression)')
+plt.xlabel('Tarih (Sayısal)')
+plt.ylabel('Toplam Satış')
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+#########################################################
+
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+# Tarih sütunundan ay ve yıl bilgilerini çıkartma
+data_df['ay'] = data_df['tarih'].dt.month
+data_df['yil'] = data_df['tarih'].dt.year
+
+# One-hot encoding kullanma (kategori, sehir, cinsiyet için)
+data_df = pd.get_dummies(data_df, columns=['kategori', 'sehir', 'cinsiyet'], drop_first=True)
+
+# Kontrol etme
+print(data_df.head(10))
+
+# Özellikler (Features)
+X = data_df[['ay', 'yil', 'fiyat', 'adet', 'yas'] + [col for col in data_df.columns if col.startswith('kategori_') or col.startswith('sehir_') or col.startswith('cinsiyet_')]]
+
+# Hedef değişken (Target)
+y = data_df['toplam_satis']
+
+# Eğitim ve test setlerine ayırma
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Modeli oluşturma ve eğitim
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# Test seti üzerinde tahmin yapma
+y_pred = model.predict(X_test)
+
+# Model performansını değerlendirme
+mae = mean_absolute_error(y_test, y_pred)
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+# Sonuçları yazdırma
+print(f"Mean Absolute Error: {mae:.2f}")
+print(f"Mean Squared Error: {mse:.2f}")
+print(f"R^2 Score: {r2:.2f}")
+
