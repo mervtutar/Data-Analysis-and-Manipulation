@@ -156,7 +156,7 @@ aylik_urun_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='M'), 'ürün_
 print(aylik_urun_trend.head(15))
 
 
-# Tarih sütunundan ay bazında gruplama
+# tarih sütunundan ay bazında gruplama
 ilk_satis_gunleri = satis_df.groupby(satis_df['tarih'].dt.to_period('M')).first().reset_index(drop=True)
 son_satis_gunleri = satis_df.groupby(satis_df['tarih'].dt.to_period('M')).last().reset_index(drop=True)
 
@@ -173,11 +173,11 @@ print("\nHaftalık Ürün Satışları:\n", haftalik_urun_satis.head())
 
 
 # Zaman serisindeki trendleri tespit etmek için grafikler çizdirelim
-# Haftalık ve aylık bazda toplam satışları hesaplayalım
-# Haftalık toplam satışlar
+# haftalık ve aylık bazda toplam satışları hesaplayalım
+# haftalık toplam satışlar
 haftalik_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='W')]).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
 
-# Aylık toplam satışlar
+# aylık toplam satışlar
 aylik_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='M')]).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
 
 # haftalık trendin grafiğini çizelim
@@ -201,3 +201,158 @@ plt.legend()
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
+
+
+####################################################################################
+# Görev 3: Kategorisel ve Sayısal Analiz (%25)
+# 1.	Ürün kategorilerine göre toplam satış miktarını ve her kategorinin tüm satışlar içindeki oranını hesaplayın.
+# 2.	Müşterilerin yaş gruplarına göre satış eğilimlerini analiz edin. (Örnek yaş grupları: 18-25, 26-35, 36-50, 50+)
+# 3.	Kadın ve erkek müşterilerin harcama miktarlarını karşılaştırın ve harcama davranışları arasındaki farkı tespit edin.
+####################################################################################
+
+
+# kategorilere göre toplam satış miktarını hesaplama
+kategori_satis = satis_df.groupby('kategori')['toplam_satis'].sum().reset_index()
+toplam_satis = kategori_satis['toplam_satis'].sum() # Tüm satışların toplamı
+
+# oran
+kategori_satis['oran'] = kategori_satis['toplam_satis'] / toplam_satis * 100
+print("Kategori Bazında Toplam Satış ve Oranlar:\n", kategori_satis)
+
+# müşteri verisi ve satış verisindeki bilgileri beraber kullanmamız gerektiği için ilk adımda elde ettiğimiz birleştirilmiş veriyi(data_df) kullanalım
+aralik = [0, 25, 35, 50, 100]
+yas_gruplari = ['18-25', '26-35', '36-50', '50+']
+data_df['yas_grubu'] = pd.cut(data_df['yas'], bins=aralik, labels=yas_gruplari, right=False)
+
+# Yaş gruplarına göre toplam satış analizi
+yas_grubu_satis = data_df.groupby('yas_grubu')['toplam_satis'].sum().reset_index()
+
+# Toplam satışın yüzdesini hesaplama
+total_sales = yas_grubu_satis['toplam_satis'].sum()
+yas_grubu_satis['oran'] = (yas_grubu_satis['toplam_satis'] / total_sales) * 100
+print("Yaş Gruplarına Göre Toplam Satış ve Oranlar:\n", yas_grubu_satis)
+
+# Pasta Grafiği
+plt.figure(figsize=(8, 8))
+plt.pie(
+    yas_grubu_satis['oran'],
+    labels=yas_grubu_satis['yas_grubu'],
+    autopct='%1.1f%%',
+    startangle=90,
+    colors=sns.color_palette("pastel"),
+    wedgeprops={'edgecolor': 'black'}
+)
+plt.title('Yaş Grubu Bazında Toplam Satış Oranları')
+plt.show()
+
+
+# cinsiyete göre toplam harcama miktarı
+count_cinsiyet = data_df['cinsiyet'].value_counts()
+print(count_cinsiyet) # Kadın    2531  Erkek    2469
+
+
+# kadın ve erkeğin harcama davranışları arasındaki farkı gözlemlemek için cinsiyetlere göre ürün ve kategori bazında harcamaları analiz edelim
+# Cinsiyetlere göre toplam harcama miktarını kategori bazında analiz etme
+kategori_cinsiyet_harcama = data_df.groupby(['kategori', 'cinsiyet'])['harcama_miktari'].sum().unstack()
+
+# Fark Analizi: Kadın ve erkeklerin kategori bazındaki harcama oranlarını hesaplama
+kategori_cinsiyet_harcama['Kadın (%)'] = (kategori_cinsiyet_harcama['Kadın'] / kategori_cinsiyet_harcama.sum(axis=1)) * 100
+kategori_cinsiyet_harcama['Erkek (%)'] = (kategori_cinsiyet_harcama['Erkek'] / kategori_cinsiyet_harcama.sum(axis=1)) * 100
+
+# Ürün Bazında Harcama
+urun_cinsiyet_harcama = data_df.groupby(['ürün_adi', 'cinsiyet'])['harcama_miktari'].sum().unstack()
+
+# Cinsiyetlerin kategori ve ürünler üzerindeki harcamalarını görselleştirelim
+# Kategori Bazında Cinsiyet Harcama Karşılaştırması
+kategori_cinsiyet_harcama[['Kadın', 'Erkek']].plot(kind='bar', figsize=(12, 6), color=['skyblue', 'salmon'])
+plt.title('Kategori Bazında Cinsiyetlere Göre Harcama Miktarı')
+plt.ylabel('Toplam Harcama Miktarı')
+plt.xlabel('Kategori')
+plt.legend(title='Cinsiyet')
+plt.tight_layout()
+plt.show()
+
+# Ürün Bazında Cinsiyet Harcama Karşılaştırması
+urun_cinsiyet_harcama.head(len(data_df["ürün_adi"].unique())).plot(kind='bar', figsize=(14, 7), color=['skyblue', 'salmon'])
+plt.title('Ürün Bazında Cinsiyetlere Göre Harcama Miktarı')
+plt.ylabel('Toplam Harcama Miktarı')
+plt.xlabel('Ürün Adı')
+plt.legend(title='Cinsiyet')
+plt.tight_layout()
+plt.show()
+
+print("Ürün Sayısı:", len(data_df["ürün_adi"].unique())) # 10
+print("Kategori Bazında Cinsiyet Harcama Analizi:\n", kategori_cinsiyet_harcama)
+print("\nÜrün Bazında Cinsiyet Harcama Analizi:\n", urun_cinsiyet_harcama.head(10))
+
+
+####################################################################################
+# Görev 4: İleri Düzey Veri Manipülasyonu (%25)
+# 1.	Müşterilerin şehir bazında toplam harcama miktarını bulun ve şehirleri en çok harcama yapan müşterilere göre sıralayın.
+# 2.	Satış verisinde her bir ürün için ortalama satış artışı oranı hesaplayın. Bu oranı hesaplamak için her bir üründe önceki aya göre satış değişim yüzdesini kullanın.
+# 3.	Pandas groupby ile her bir kategorinin aylık toplam satışlarını hesaplayın ve değişim oranlarını grafikle gösterin.
+####################################################################################
+
+# şehir bazında toplam harcama miktarı
+sehir_harcama = data_df.groupby('sehir')['harcama_miktari'].sum().sort_values(ascending=False).reset_index()
+print("Şehir Bazında Toplam Harcama\n",sehir_harcama)
+
+# görselleştirelim
+plt.figure(figsize=(10, 6))
+sns.barplot(x='harcama_miktari', y='sehir', data=sehir_harcama, palette='viridis')
+plt.title('Şehir Bazında Toplam Harcama')
+plt.xlabel('Toplam Harcama Miktarı')
+plt.ylabel('Şehir')
+plt.tight_layout()
+plt.show()
+
+
+# ürünlerin ortalama satış oranını hesaplamak için öncelikle tarih sütunundan yıl-ay bilgisi bulalım
+data_df['tarih'] = pd.to_datetime(data_df['tarih'])
+data_df['yil_ay'] = data_df['tarih'].dt.to_period('M')
+
+# ürün bazında aylık toplam satış
+urun_aylik_satis = data_df.groupby(['ürün_adi', 'yil_ay'])['toplam_satis'].sum().reset_index()
+
+# satış artış oranı hesaplama
+urun_aylik_satis['satis_degisim'] = urun_aylik_satis.groupby('ürün_adi')['toplam_satis'].pct_change() * 100
+
+# ortalama satış artışı oranı hesaplama
+urun_ortalama_artis = urun_aylik_satis.groupby('ürün_adi')['satis_degisim'].mean().reset_index()
+urun_ortalama_artis.rename(columns={'satis_degisim': 'ortalama_artis_orani'}, inplace=True)
+urun_ortalama_artis.sort_values('ortalama_artis_orani', ascending=False, inplace=True)
+
+# sonuç
+print("Ürünlerin Ortalama Satış Artış Oranı:\n", urun_ortalama_artis.head(10))
+
+# aynı işlemi ürün için değil kategoriler için yapalım
+
+kategori_aylik_satis = data_df.groupby(['kategori', 'yil_ay'])['toplam_satis'].sum().reset_index()
+
+# aylık satış değişim oranı
+kategori_aylik_satis['degisim_orani'] = kategori_aylik_satis.groupby('kategori')['toplam_satis'].pct_change() * 100
+
+# her kategorinin aylık toplam satış değişim oranını görselleştirelim
+plt.figure(figsize=(12, 8))
+for kategori in kategori_aylik_satis['kategori'].unique():
+    temp_df = kategori_aylik_satis[kategori_aylik_satis['kategori'] == kategori]
+    plt.plot(temp_df['yil_ay'].astype(str), temp_df['degisim_orani'], marker='o', label=kategori)
+
+plt.title('Kategori Bazında Aylık Toplam Satış Değişim Oranı')
+plt.xlabel('Yıl-Ay')
+plt.ylabel('Değişim Oranı (%)')
+plt.legend(title='Kategori')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+# Sonuç
+print("Kategori Bazında Aylık Satışlar ve Değişim Oranları:\n", kategori_aylik_satis.head(10))
+
+
+####################################################################################
+# Görev 3: İleri Düzey Veri Manipülasyonu (%25)
+# 1.	Müşterilerin şehir bazında toplam harcama miktarını bulun ve şehirleri en çok harcama yapan müşterilere göre sıralayın.
+# 2.	Satış verisinde her bir ürün için ortalama satış artışı oranı hesaplayın. Bu oranı hesaplamak için her bir üründe önceki aya göre satış değişim yüzdesini kullanın.
+# 3.	Pandas groupby ile her bir kategorinin aylık toplam satışlarını hesaplayın ve değişim oranlarını grafikle gösterin.
+####################################################################################
