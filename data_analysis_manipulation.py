@@ -41,7 +41,7 @@ check_df(musteri_df)
 
 # eksik değerlere bakalım
 satis_df.info() # veride eksik değer bulunmadı
-musteri_df.info() # # veride eksik değer bulunmadı
+musteri_df.info() # veride eksik değer bulunmadı
 
 
 # boxplot ile aykırı değerlere bakalım
@@ -453,22 +453,23 @@ plt.tight_layout()
 plt.show()
 
 
-#Cohort analizi
-# İlk satın alma tarihini hesaplama
+# Cohort analizi
+
+# ilk satın alma tarihini hesaplama
 ilk_satin_alma = data_df.groupby('musteri_id')['tarih'].min().reset_index()
 ilk_satin_alma.rename(columns={'tarih': 'ilk_satin_alma_tarihi'}, inplace=True)
 
-# Cohort başlangıç ayı
+# cohort ilk ay
 ilk_satin_alma['ilk_ay'] = ilk_satin_alma['ilk_satin_alma_tarihi'].dt.to_period('M')
 
-# Veri setine ekleme
+# veri setine ekleyelim
 data_df = data_df.merge(ilk_satin_alma, on='musteri_id')
 
-# Cohort ve satış ayı
+# cohort ve satış ayı
 data_df['satis_ayi'] = data_df['tarih'].dt.to_period('M')
 data_df['cohort_ay'] = (data_df['satis_ayi'] - data_df['ilk_ay']).apply(lambda x: x.n)
 
-# Cohort analizi pivot table
+# cohort analizi pivot table
 cohort_data = data_df.pivot_table(
     index='ilk_ay',
     columns='cohort_ay',
@@ -476,10 +477,10 @@ cohort_data = data_df.pivot_table(
     aggfunc='nunique'
 )
 
-# Cohort yüzdeleri
+# cohort yüzdeleri
 cohort_percentage = cohort_data.divide(cohort_data.iloc[:, 0], axis=0) * 100
 
-# Görselleştirme
+# görselleştirme
 plt.figure(figsize=(12, 8))
 sns.heatmap(cohort_percentage, annot=True, fmt=".1f", cmap="YlGnBu")
 plt.title('Cohort Analizi: Müşteri Tekrar Alım Oranları')
@@ -503,14 +504,12 @@ data_df['yil'] = data_df['tarih'].dt.year
 
 # kategorik değişkenler için One-hot encoding kullanalım (kategori, sehir, cinsiyet için)
 data_df = pd.get_dummies(data_df, columns=['kategori', 'sehir', 'cinsiyet'], drop_first=True)
-
-# Kontrol etme
 print(data_df.head(10))
 
-# Özellikler (Features)
+# özellikler (Features)
 X = data_df[['ay', 'yil', 'fiyat', 'adet', 'yas'] + [col for col in data_df.columns if col.startswith('kategori_') or col.startswith('sehir_') or col.startswith('cinsiyet_')]]
 
-# Hedef değişken (Target)
+# hedef değişken (Target)
 y = data_df['toplam_satis']
 
 # eğitim ve test setlerine ayırma
