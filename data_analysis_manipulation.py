@@ -58,6 +58,7 @@ sns.boxplot(data=satis_df, y='fiyat', color='salmon')
 plt.title('Satış Verisi - Fiyat')
 plt.ylabel('Fiyat')
 
+# Satış verisindeki toplam satış
 plt.subplot(1, 3, 3)
 sns.boxplot(data=satis_df, y='toplam_satis', color='lightgreen')
 plt.title('Satış Verisi - Toplam Satış')
