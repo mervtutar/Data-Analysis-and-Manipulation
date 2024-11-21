@@ -487,7 +487,6 @@ plt.xlabel('Cohort Ayı')
 plt.ylabel('İlk Alım Ayı')
 plt.show()
 
-# Sonuç
 print("Cohort Analizi Tablosu:\n", cohort_percentage)
 
 from sklearn.model_selection import train_test_split
@@ -502,7 +501,7 @@ data_df['tarih'] = pd.to_datetime(data_df['tarih'])
 data_df['ay'] = data_df['tarih'].dt.month
 data_df['yil'] = data_df['tarih'].dt.year
 
-# One-hot encoding kullanma (kategori, sehir, cinsiyet için)
+# kategorik değişkenler için One-hot encoding kullanalım (kategori, sehir, cinsiyet için)
 data_df = pd.get_dummies(data_df, columns=['kategori', 'sehir', 'cinsiyet'], drop_first=True)
 
 # Kontrol etme
@@ -514,22 +513,22 @@ X = data_df[['ay', 'yil', 'fiyat', 'adet', 'yas'] + [col for col in data_df.colu
 # Hedef değişken (Target)
 y = data_df['toplam_satis']
 
-# Eğitim ve test setlerine ayırma
+# eğitim ve test setlerine ayırma
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Modeli oluşturma ve eğitim
+# modeli oluşturma ve eğitim
 model = LinearRegression()
 model.fit(X_train, y_train)
 
-# Test seti üzerinde tahmin yapma
+# test seti üzerinde tahmin yapma
 y_pred = model.predict(X_test)
 
-# Model performansını değerlendirme
+# model performansını değerlendirme
 mae = mean_absolute_error(y_test, y_pred)
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
 
-# Sonuçları yazdırma
+# sonuçları yazdırma
 print(f"Mean Absolute Error: {mae:.2f}")
 print(f"Mean Squared Error: {mse:.2f}")
 print(f"R^2 Score: {r2:.2f}")
