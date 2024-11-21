@@ -1,5 +1,5 @@
 # Data-Analysis-and-Manipulation
-Patika.dev &amp; New Mind AI Bootcamp Homework
+Patika.dev &amp; New Mind AI Bootcamp Task
 # Veri Analizi ve Manipülasyonu
 
 Bu proje, veri temizleme, analiz ve görselleştirme süreçlerini içeren bir veri analizi çalışmasını kapsamaktadır. Proje, satış ve müşteri verileri üzerinde çeşitli veri manipülasyonu ve analiz yöntemlerini kullanarak sonuçlar elde etmeyi amaçlamaktadır.
