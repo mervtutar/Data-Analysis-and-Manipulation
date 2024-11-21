@@ -16,7 +16,7 @@ def check_df(dataframe, head=5):
     print(dataframe.head(head))
     print("##################### Tail #####################")
     print(dataframe.tail(head))
-    print("##################### NA #####################")
+    print("################ NA #################")
     print(dataframe.isnull().sum())
     print("##################### Quantiles #####################")
     # sayısal sütunlar için temel istatistiksel ölçümleri (ortalama, standart sapma, minimum, maksimum gibi) belirli yüzdelik dilimlerle hesapla
@@ -66,7 +66,7 @@ plt.ylabel('Fiyat')
 plt.tight_layout()
 plt.show()
 
-# grafiklerde Toplam Satışta aykırı değer gözlemlendi
+# grafiklerde Toplam Satışta 35 aykırı değer gözlemlendi
 
 # aykırı değerleri IQR ile tespit edelim
 def check_outliers(df, column):
@@ -139,32 +139,66 @@ satis_df = satis_df.sort_values(by='tarih')
 # Haftalık bazda toplam satış ve adet analizi (Kategori bazında)
 haftalik_kategori_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='W'), 'kategori']).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
 print(haftalik_kategori_trend.head(10))
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=haftalik_kategori_trend, x="tarih", y="toplam_satis", hue="kategori", marker="o")
+plt.title("Haftalık Kategori Bazında Toplam Satış Trendleri")
+plt.xlabel("Tarih")
+plt.ylabel("Toplam Satış")
+plt.xticks(rotation=45)
+plt.legend(title="Kategori")
+plt.tight_layout()
+plt.show()
 
 
 # Haftalık bazda toplam satış ve adet analizi (Ürün bazında)
 haftalik_urun_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='W'), 'ürün_adi']).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
 print(haftalik_urun_trend.head(15))
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=haftalik_urun_trend, x="tarih", y="toplam_satis", hue="ürün_adi", marker="o")
+plt.title("Haftalık Ürün Bazında Toplam Satış Trendleri")
+plt.xlabel("Tarih")
+plt.ylabel("Toplam Satış")
+plt.xticks(rotation=45)
+plt.legend(title="Ürün Adı")
+plt.tight_layout()
+plt.show()
 
 
 # Aylık bazda toplam satış ve adet analizi (Kategori bazında)
 aylik_kategori_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='M'), 'kategori']).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
 print(aylik_kategori_trend.head(10))
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=aylik_kategori_trend, x="tarih", y="toplam_satis", hue="kategori", marker="o")
+plt.title("Aylık Kategori Bazında Toplam Satış Trendleri")
+plt.xlabel("Tarih")
+plt.ylabel("Toplam Satış")
+plt.xticks(rotation=45)
+plt.legend(title="Kategori")
+plt.tight_layout()
+plt.show()
 
 
 # Aylık bazda toplam satış ve adet analizi (Ürün bazında)
 aylik_urun_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='M'), 'ürün_adi']).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
 print(aylik_urun_trend.head(15))
+plt.figure(figsize=(12, 6))
+sns.lineplot(data=aylik_urun_trend, x="tarih", y="toplam_satis", hue="ürün_adi", marker="o")
+plt.title("Aylık Ürün Bazında Toplam Satış Trendleri")
+plt.xlabel("Tarih")
+plt.ylabel("Toplam Satış")
+plt.xticks(rotation=45)
+plt.legend(title="Ürün Adı")
+plt.tight_layout()
+plt.show()
+
 
 
 # tarih sütunundan ay bazında gruplama
 ilk_satis_gunleri = satis_df.groupby(satis_df['tarih'].dt.to_period('M')).first().reset_index(drop=True)
 son_satis_gunleri = satis_df.groupby(satis_df['tarih'].dt.to_period('M')).last().reset_index(drop=True)
 
-print("Her ayın ilk satış günleri:")
-print(ilk_satis_gunleri[['tarih', 'kategori', 'ürün_adi', 'toplam_satis']].head())
-
-print("\nHer ayın son satış günleri:")
-print(son_satis_gunleri[['tarih', 'kategori', 'ürün_adi', 'toplam_satis']].head())
+print("Her ayın ilk satış günleri:\n",ilk_satis_gunleri[['tarih', 'toplam_satis']].head())
+print("Her ayın son satış günleri:\n",son_satis_gunleri[['tarih', 'toplam_satis']].head())
 
 # her hafta kaç ürün satıldığına bakalım
 haftalik_urun_satis = satis_df.groupby([pd.Grouper(key='tarih', freq='W')]).agg({'adet': 'sum'}).reset_index()
@@ -180,6 +214,10 @@ haftalik_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='W')]).agg({'top
 # aylık toplam satışlar
 aylik_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='M')]).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
 
+# Yıllık toplam satışları hesaplama
+yillik_trend = satis_df.groupby([pd.Grouper(key='tarih', freq='Y')]).agg({'toplam_satis': 'sum', 'adet': 'sum'}).reset_index()
+
+
 # haftalık trendin grafiğini çizelim
 plt.figure(figsize=(10, 6))
 sns.lineplot(data=haftalik_trend, x='tarih', y='toplam_satis', marker='o', label='Haftalık Toplam Satış')
@@ -194,7 +232,7 @@ plt.show()
 # aylık trendin grafiğini çizelim
 plt.figure(figsize=(10, 6))
 sns.lineplot(data=aylik_trend, x='tarih', y='toplam_satis', marker='o', label='Aylık Toplam Satış')
-plt.title('Aylık Toplam Satış ve Ürün Satış Trendleri')
+plt.title('Aylık Toplam Satış Trendleri')
 plt.xlabel('Tarih')
 plt.ylabel('Değer')
 plt.legend()
@@ -202,6 +240,44 @@ plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
 
+
+# yıllık trendin çizgi grafiğini çizelim
+plt.figure(figsize=(10, 6))
+sns.lineplot(data=yillik_trend, x='tarih', y='toplam_satis', marker='o', label='Yıllık Toplam Satış', color='blue')
+plt.title('Yıllık Toplam Satış Trendleri')
+plt.xlabel('Yıl')
+plt.ylabel('Toplam Satış Değeri')
+plt.xticks(rotation=45)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# hangi ürünün adet olarak daha fazla satıldığını inceleyelim
+urun_adet_toplam = satis_df.groupby('ürün_adi')['adet'].sum().reset_index()
+
+# adet sayısına göre azalan şekilde sıralama
+urun_adet_toplam = urun_adet_toplam.sort_values('adet', ascending=False)
+
+# pasta grafiği ile görselleştirelim
+plt.figure(figsize=(8, 8))
+plt.pie(urun_adet_toplam['adet'], labels=urun_adet_toplam['ürün_adi'], autopct='%1.1f%%', startangle=140)
+plt.title('Ürünlerin Satılma Oranları (Adet Sayısı Bazında) \n')
+plt.axis('equal')
+plt.show()
+
+# aynı işlemi kategoriler için yapalım
+# kategori bazında toplam adet hesaplama
+kategori_adet_toplam = satis_df.groupby('kategori')['adet'].sum().reset_index()
+
+# adet sayısına göre azalan şekilde sıralama
+kategori_adet_toplam = kategori_adet_toplam.sort_values('adet', ascending=False)
+
+# kategorilere göre Satış Oranları için pasta grafiği oluşturma
+plt.figure(figsize=(8, 8))
+plt.pie(kategori_adet_toplam['adet'], labels=kategori_adet_toplam['kategori'], autopct='%1.1f%%', startangle=140)
+plt.title('Kategorilere göre Satış Oranları (Adet Sayısı Bazında)\n')
+plt.axis('equal')  # Eşit oranlı daire
+plt.show()
 
 ####################################################################################
 # Görev 3: Kategorisel ve Sayısal Analiz (%25)
