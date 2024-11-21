@@ -300,10 +300,10 @@ aralik = [0, 25, 35, 50, 100]
 yas_gruplari = ['18-25', '26-35', '36-50', '50+']
 data_df['yas_grubu'] = pd.cut(data_df['yas'], bins=aralik, labels=yas_gruplari, right=False)
 
-# Yaş gruplarına göre toplam satış analizi
+# yaş gruplarına göre toplam satış analizi
 yas_grubu_satis = data_df.groupby('yas_grubu')['toplam_satis'].sum().reset_index()
 
-# Toplam satışın yüzdesini hesaplama
+# toplam satışın yüzdesini hesaplama
 total_sales = yas_grubu_satis['toplam_satis'].sum()
 yas_grubu_satis['oran'] = (yas_grubu_satis['toplam_satis'] / total_sales) * 100
 print("Yaş Gruplarına Göre Toplam Satış ve Oranlar:\n", yas_grubu_satis)
@@ -357,9 +357,8 @@ plt.legend(title='Cinsiyet')
 plt.tight_layout()
 plt.show()
 
-print("Ürün Sayısı:", len(data_df["ürün_adi"].unique())) # 10
 print("Kategori Bazında Cinsiyet Harcama Analizi:\n", kategori_cinsiyet_harcama)
-print("\nÜrün Bazında Cinsiyet Harcama Analizi:\n", urun_cinsiyet_harcama.head(10))
+print("\nÜrün Bazında Cinsiyet Harcama Analizi:\n", urun_cinsiyet_harcama)
 
 
 ####################################################################################
@@ -491,70 +490,15 @@ plt.show()
 # Sonuç
 print("Cohort Analizi Tablosu:\n", cohort_percentage)
 
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 # Tahmin Modeli - aylık toplam satışı tahmin edelim
 data_df = pd.read_csv("merged_data.csv")
 data_df.head()
 data_df['tarih'] = pd.to_datetime(data_df['tarih'])
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-
-# Aylık toplam satış
-aylik_satis = data_df.groupby(data_df['tarih'].dt.to_period('M')).agg({'toplam_satis': 'sum'}).reset_index()
-aylik_satis['tarih'] = aylik_satis['tarih'].astype(str)
-
-# Tarihi sayısal değere dönüştürme
-aylik_satis['tarih_num'] = range(1, len(aylik_satis) + 1)
-
-# Model için özellikler ve hedef
-X = aylik_satis[['tarih_num']]
-y = aylik_satis['toplam_satis']
-
-# Veriyi train/test olarak bölme
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Modeli oluşturma ve eğitme
-model = LinearRegression()
-model.fit(X_train, y_train)
-
-# Tahminler
-y_pred = model.predict(X_test)
-
-# Model başarımı
-mae = mean_absolute_error(y_test, y_pred)
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-
-# Sonuç
-print(f"Mean Absolute Error: {mae:.2f}")
-print(f"Mean Squared Error: {mse:.2f}")
-print(f"R^2 Score: {r2:.2f}")
-
-# Gelecek aylar için tahmin
-future = pd.DataFrame({'tarih_num': range(len(aylik_satis) + 1, len(aylik_satis) + 13)})
-future['tahmin_satis'] = model.predict(future)
-
-# Görselleştirme
-plt.figure(figsize=(10, 6))
-plt.plot(aylik_satis['tarih_num'], aylik_satis['toplam_satis'], label='Gerçek Veriler', marker='o')
-plt.plot(future['tarih_num'], future['tahmin_satis'], label='Tahmin', linestyle='--', color='red')
-plt.title('Aylık Satış Tahmini (Linear Regression)')
-plt.xlabel('Tarih (Sayısal)')
-plt.ylabel('Toplam Satış')
-plt.legend()
-plt.tight_layout()
-plt.show()
-
-#########################################################
-
-
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-
-# Tarih sütunundan ay ve yıl bilgilerini çıkartma
+# tarih sütunundan ay ve yıl bilgilerini çıkartma
 data_df['ay'] = data_df['tarih'].dt.month
 data_df['yil'] = data_df['tarih'].dt.year
 
@@ -589,4 +533,3 @@ r2 = r2_score(y_test, y_pred)
 print(f"Mean Absolute Error: {mae:.2f}")
 print(f"Mean Squared Error: {mse:.2f}")
 print(f"R^2 Score: {r2:.2f}")
-
